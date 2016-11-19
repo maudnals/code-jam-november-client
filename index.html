@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<title>Pulsing colors</title>
+		<link rel="stylesheet" href="styles.css" media="screen"/>
+	</head>
+	<body id="body">
+
+
+		<div id="video_box">
+	    <div id="video_overlays"></div>
+	    <div>
+	        <video id="videowinter" src="moutains.mp4"  type="video/mp4" autoplay loop>
+						Your browser does not support this streaming content.
+					</video>
+	    </div>
+		</div>
+
+		<script src="https://cdn.socket.io/socket.io-1.4.5.js"></script>
+		<script type="text/javascript">
+
+			var socket = io('http://192.168.2.221:3000');
+			socket.on('phonemotion', function(phoneMotion){
+
+				if (checkMovesEnough(phoneMotion)){
+
+						var sumAccelerations = getSumAccelerations(phoneMotion);
+						console.log('sumAccelerations', sumAccelerations);
+
+						var color = generateColor(sumAccelerations);
+						document.getElementById("video_overlays").style.backgroundColor = color;
+
+						var vid = document.getElementById("videowinter");
+						vid.playbackRate = sumAccelerations/80;
+						console.log('playbackRate', vid.playbackRate
+					);
+				}
+			});
+
+			function checkMovesEnough(phoneMotion){
+				return phoneMotion.acceleration.x > 1 ||
+					phoneMotion.acceleration.y > 1 ||
+					phoneMotion.acceleration.x > 1;
+			}
+
+			function normalizeAcceleration(axisAcceleration){
+				return Math.floor(Math.abs(axisAcceleration * 8));
+			}
+
+			function generateColor(sumAccelerations){
+				if (sumAccelerations > 255){
+					sumAccelerations = 255;
+				}
+				var diff = 255 - sumAccelerations;
+				return "rgba("
+					+ sumAccelerations + ", "
+					+ diff + ", "
+					+ 190 + ", 0.4)";
+			}
+
+			function getSumAccelerations(phoneMotion){
+
+				var accelerations = [
+					phoneMotion.acceleration.x,
+					phoneMotion.acceleration.y,
+					phoneMotion.acceleration.z
+				];
+
+				var normalizedAccelerations = accelerations.map(function(a){
+					return normalizeAcceleration(a);
+				});
+
+				var sumAccelerations = normalizedAccelerations.reduce(
+					function(accu, a){
+						return accu + a;
+					}, 0);
+
+				return sumAccelerations;
+			}
+		</script>
+	</body>
+</html>
